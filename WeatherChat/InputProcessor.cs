@@ -36,7 +36,9 @@ namespace WeatherChat
                     }
                     catch (Exception ex)
                     {
-                        Debug.WriteLine(ex.Message);
+                        Console.WriteLine(ex.Message);
+                        zip = null;
+                        continue;
                     }
                     GiveAdvice(stoppingToken);
                 }

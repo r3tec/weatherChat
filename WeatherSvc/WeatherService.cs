@@ -34,6 +34,13 @@ namespace WeatherSvc
                 var str = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
                 {
+                    try
+                    {
+                        var result = JsonSerializer.Deserialize<WeatherError>(str);
+                        if (result != null && result.Error != null)
+                            throw new ApplicationException($"Weather service error: {result.Error.Code}, {result.Error.Error}");
+                    }
+                    catch { throw; }
                     return JsonSerializer.Deserialize<WeatherRequest>(str).Current;
                 }
                 throw new ApplicationException(str);
