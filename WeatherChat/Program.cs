@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
+using WeatherSvc;
 
 namespace WeatherChat
 {
@@ -28,6 +29,10 @@ namespace WeatherChat
             .ConfigureServices((hostContent, services) =>
             {
                 services.AddHostedService<InputProcessor>();
+                services.Configure<WeatherApiConfig>(hostContent.Configuration.GetSection("WeatherService"));
+                services.AddOptions();
+
+                services.AddSingleton<WeatherService>();
             })
             .UseWindowsService()
             ;

@@ -1,17 +1,26 @@
 ﻿using Microsoft.Extensions.Hosting;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using WeatherSvc;
+using WeatherSvc.Domain;
 
 namespace WeatherChat
 {
     public class InputProcessor : BackgroundService
     {
-        public enum Advice { None, GoOut, WearSuncsreen, FlyKite, GoodBye}
+        readonly WeatherService weatherService;
+        public enum Advice { None, GoOut, WearSuncsreen, FlyKite, GoodBye }
         string zip = string.Empty;
+        WeatherResponse current;
+        public InputProcessor(WeatherService svc)
+        {
+            weatherService = svc;
+        }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             while (!stoppingToken.IsCancellationRequested)
@@ -20,8 +29,16 @@ namespace WeatherChat
                 GetZipInfo(stoppingToken);
                 if (!string.IsNullOrEmpty(zip))
                 {
-                    GiveAdvice(stoppingToken);
                     Console.WriteLine($"your zip code is {zip}");
+                    try
+                    {
+                        current = await weatherService.GetWeather(zip);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine(ex.Message);
+                    }
+                    GiveAdvice(stoppingToken);
                 }
                 break;
             }
@@ -57,7 +74,8 @@ namespace WeatherChat
             Console.WriteLine("To end the game press 4 + Enter or press Ctrl + c");
 
             Advice advice = Advice.None;
-            while (!stoppingToken.IsCancellationRequested) {
+            while (!stoppingToken.IsCancellationRequested)
+            {
                 var res = Console.ReadLine();
                 if (res != null)
                 {
@@ -65,7 +83,7 @@ namespace WeatherChat
                     {
                         if (advice == Advice.GoodBye)
                             break;
-                        Console.WriteLine($"Advice: {advice}");
+                        Console.WriteLine(DoAdvice(advice));
                     }
                     else
                         Console.WriteLine("Try again.");
@@ -74,6 +92,25 @@ namespace WeatherChat
                     Console.WriteLine("Stop requested");
             }
             Console.WriteLine("Good bye!..");
+        }
+
+        private string DoAdvice(Advice advice)
+        {
+            System.Diagnostics.Debug.WriteLine(current.ToString());
+            switch (advice)
+            {
+                case Advice.FlyKite:
+                    return (current.WindSpeed > 1 && current.Precipitation <= 0) ?
+                        "Yes" : "Not advised";
+                case Advice.GoOut:
+                    return (current.Precipitation <= 0) ?
+                        "Yes" : "Not advised";
+                case Advice.WearSuncsreen:
+                    return (current.UvIndex > 3) ?
+                        "Yes" : "Not necessary";
+                default:
+                    return "I am dumbfound";
+            }
         }
     }
 }
